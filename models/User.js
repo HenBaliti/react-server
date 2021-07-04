@@ -31,15 +31,22 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  avatar:{
+  avatar: {
     type: String,
     required: true,
   },
   created_at: {
     type: Date,
     required: true,
-    default: Date.now
+    default: Date.now,
   },
+  companies: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Company",
+      required: false,
+    },
+  ],
 });
 
 module.exports = mongoose.model("User", userSchema);

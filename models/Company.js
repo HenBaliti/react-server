@@ -7,46 +7,72 @@ const companySchema = new mongoose.Schema({
   },
   avatar: {
     type: String,
-    default:"local photo",
-    required: true,
+    default: "local photo",
+    // required: true,
   },
   city: {
     type: String,
-    default:"No city provided",
-    required: true,
+    default: "No city provided",
+    // required: true,
   },
   address: {
     type: String,
-    default:"No address provided",
-    required: true,
+    default: "No address provided",
+    // required: true,
   },
   state: {
     type: String,
-    default:"No state provided",
-    required: true,
+    default: "No state provided",
+    // required: true,
   },
   zip: {
     type: Number,
-    default:1234,
-    required: true,
+    default: 1234,
+    // required: true,
   },
-  phone: {
+  company_phone: {
+    type: String,
+    // required: true,
+  },
+  company_email: {
+    type: String,
+    // required: true,
+  },
+  website: {
+    type: String,
+    default: "No website provided",
+    // required: true,
+  },
+  primary_contact_name: {
     type: String,
     required: true,
   },
-  email: {
+  primary_contact_phone: {
     type: String,
     required: true,
   },
-  site: {
+  primary_contact_job_title: {
     type: String,
-    default:"No website provided",
     required: true,
   },
   created_at: {
-    type: timeStamp,
+    type: Date,
     required: true,
   },
+  managers: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: false,
+    },
+  ],
+  users: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: false,
+    },
+  ],
 });
 
 module.exports = mongoose.model("Company", companySchema);
