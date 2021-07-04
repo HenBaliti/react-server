@@ -18,16 +18,34 @@ router.get("/getCompanies", verifyToken, async (req, res) => {
       return theUser.companies;
     });
 
-  console.log(companiesArray);
-
   //Mapping the companies array and return only the *name* of the company and the *id*
   const map1 = companiesArray.map((company) => {
+    console.log("Company:");
+    console.log(company);
+
     return { name: company.name, _id: company._id };
   });
-  console.log("-------------------\n");
-  console.log(map1);
 
   res.status(200).send(map1);
+});
+
+//Get Company Data by company id
+router.get("/getCompanyData", verifyToken, async (req, res) => {
+  // console.log(req.body.companyID);
+  // console.log(req.userID);
+
+  const companyData = await Company.findById(
+    mongoose.Types.ObjectId(req.query.companyID)
+  );
+
+  const primeManagerData = await User.findById(
+    mongoose.Types.ObjectId(companyData.primary_contact_id)
+  );
+
+  // console.log(primeManagerData);
+  // console.log(companyData);
+
+  res.status(200).send({ companyData, primaryManagerData: primeManagerData });
 });
 
 module.exports = router;
