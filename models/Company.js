@@ -43,18 +43,6 @@ const companySchema = new mongoose.Schema({
     default: "No website provided",
     // required: true,
   },
-  primary_contact_name: {
-    type: String,
-    required: true,
-  },
-  primary_contact_phone: {
-    type: String,
-    required: true,
-  },
-  primary_contact_job_title: {
-    type: String,
-    required: true,
-  },
   primary_contact_id: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",

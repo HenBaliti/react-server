@@ -48,9 +48,6 @@ router.post("/signup", async (req, res) => {
         company_phone: "",
         company_email: "",
         website: "",
-        primary_contact_name: `${first_name} ${last_name}`,
-        primary_contact_phone: phone,
-        primary_contact_job_title: job_title,
         primary_contact_id: user._id,
         created_at: created_at,
       });
