@@ -4,6 +4,9 @@ const Company = mongoose.model("Company");
 const User = mongoose.model("User");
 const router = express.Router();
 const verifyToken = require("../helper/jwt");
+const bcrypt = require("bcrypt");
+// const jwt = require("jsonwebtoken");
+const SALTROUNDS = 10;
 
 //Get all the companies by getting the user id and token
 router.get("/getCompanies", verifyToken, async (req, res) => {
@@ -34,18 +37,37 @@ router.get("/getCompanyData", verifyToken, async (req, res) => {
   // console.log(req.body.companyID);
   // console.log(req.userID);
 
+  try {
+    const companyData = await Company.findById(
+      mongoose.Types.ObjectId(req.query.companyID)
+    );
+
+    const primeManagerData = await User.findById(
+      mongoose.Types.ObjectId(companyData.primary_contact_id)
+    );
+
+    // console.log(primeManagerData);
+    // console.log(companyData);
+
+    res.status(200).send({ companyData, primaryManagerData: primeManagerData });
+  } catch (err) {
+    res.status(500).send(err);
+  }
+});
+
+//Get All Users Of specific Company
+router.get("/getCompanyUsers", verifyToken, async (req, res) => {
   const companyData = await Company.findById(
     mongoose.Types.ObjectId(req.query.companyID)
-  );
-
-  const primeManagerData = await User.findById(
-    mongoose.Types.ObjectId(companyData.primary_contact_id)
-  );
-
-  // console.log(primeManagerData);
-  // console.log(companyData);
-
-  res.status(200).send({ companyData, primaryManagerData: primeManagerData });
+  )
+    .populate("managers")
+    .populate("users")
+    .then((companyData) => {
+      res.status(200).send({
+        CompanyManagers: companyData.managers,
+        CompanyUsers: companyData.users,
+      });
+    });
 });
 
 //Update User Data
@@ -79,6 +101,66 @@ router.put("/editCompany/:id", verifyToken, async (req, res) => {
     .catch((err) => {
       res.status(400).send("Error With Editing Company: " + err);
     });
+});
+
+//Add To Existing Company A New User
+router.post("/createNewUser/:id", verifyToken, async (req, res) => {
+  const created_at = new Date().getTime();
+  const { first_name, last_name, email, password, job_title, phone, typeUser } =
+    req.query;
+  const avatar = "Default image uri";
+
+  //Find the company By The specific ID
+  const company = await Company.findById(
+    mongoose.Types.ObjectId(req.params.id)
+  );
+
+  //Hashing the password
+  bcrypt.hash(password, SALTROUNDS, async (err, hashedPass) => {
+    if (err) {
+      console.log("There was an error with hashing the pass : \n");
+      console.log(err);
+    }
+
+    try {
+      //Building the new user
+      const user = new User({
+        first_name: first_name,
+        last_name: last_name,
+        email: email,
+        password: hashedPass,
+        job_title: job_title,
+        phone: phone,
+        avatar: avatar,
+        created_at: created_at,
+        companies: new Array(),
+      });
+
+      //Checking the type of the user
+      if (typeUser == "Manager") {
+        // insert for the company the id of the user-manager
+        company.managers.push(mongoose.Types.ObjectId(user._id));
+      } else {
+        // insert for the company the id of the user-regular
+        if (company.users != null) {
+          company.users.push(mongoose.Types.ObjectId(user._id));
+        } else {
+          company.users = new Array(mongoose.Types.ObjectId(user._id));
+        }
+      }
+
+      // insert for the new user the id of the managed company
+      user.companies.push(mongoose.Types.ObjectId(company._id));
+
+      await company.save();
+      await user.save();
+
+      // const token = jwt.sign({ userId: user._id }, MY_SECRET_KEY);
+      res.status(200).send(user);
+    } catch (err) {
+      return res.status(422).send(err.message);
+    }
+  });
 });
 
 module.exports = router;

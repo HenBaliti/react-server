@@ -48,6 +48,7 @@ router.post("/signup", async (req, res) => {
         company_phone: "",
         company_email: "",
         website: "",
+        users: new Array(),
         primary_contact_id: user._id,
         created_at: created_at,
       });
@@ -91,12 +92,22 @@ router.post("/signin", async (req, res) => {
   }
 });
 
-//Get User Data
+//Get User Data By Token
 router.get("/getUserData/:token", verifyToken, async (req, res) => {
   var decoded = jwt_decode(req.params.token);
 
   try {
     const user = await User.findById(mongoose.Types.ObjectId(decoded.userId));
+    res.status(200).send({ user: user });
+  } catch (err) {
+    res.status(400).send(err);
+  }
+});
+
+//Get User Data By userID
+router.get("/getUserDataById/:id", verifyToken, async (req, res) => {
+  try {
+    const user = await User.findById(mongoose.Types.ObjectId(req.params.id));
     res.status(200).send({ user: user });
   } catch (err) {
     res.status(400).send(err);
@@ -166,6 +177,42 @@ router.put("/editUser/:id", verifyToken, async (req, res) => {
         res.status(400).send("Error With Editing User: " + err);
       });
   }
+});
+
+//Delete user
+router.delete("/delete/:id", verifyToken, async (req, res) => {
+  if (!mongoose.isValidObjectId(req.params.id)) {
+    return res.status(400).json({
+      success: false,
+      message: "Exeption occured.\nPlease try again later",
+    });
+  }
+
+  User.deleteOne({
+    _id: mongoose.Types.ObjectId(req.params.id),
+  })
+    .then(function () {
+      //Removing the user from this company
+      Company.updateOne(
+        {},
+        {
+          $pull: {
+            managers: mongoose.Types.ObjectId(req.params.id),
+            users: mongoose.Types.ObjectId(req.params.id),
+          },
+        },
+        { multi: true }
+      ).then(() => {
+        return res
+          .status(200)
+          .json({ success: true, message: "The User has been deleted" });
+      });
+    })
+    .catch(function (error) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Cannot find the User" });
+    });
 });
 
 module.exports = router;
