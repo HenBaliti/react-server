@@ -193,7 +193,7 @@ router.delete("/delete/:id", verifyToken, async (req, res) => {
   })
     .then(function () {
       //Removing the user from this company
-      Company.updateOne(
+      Company.updateMany(
         {},
         {
           $pull: {

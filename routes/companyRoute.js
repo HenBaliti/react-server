@@ -8,7 +8,7 @@ const bcrypt = require("bcrypt");
 // const jwt = require("jsonwebtoken");
 const SALTROUNDS = 10;
 
-//Get all the companies by getting the user id and token
+//Get all the companies of a user by getting the user id and token
 router.get("/getCompanies", verifyToken, async (req, res) => {
   console.log("Got here");
   console.log(req.userID);
@@ -161,6 +161,90 @@ router.post("/createNewUser/:id", verifyToken, async (req, res) => {
       return res.status(422).send(err.message);
     }
   });
+});
+
+//Get all the companies of a user by getting the user id and token
+router.get("/getAllCompanies", verifyToken, async (req, res) => {
+  const companiesArr = await Company.find().then((companies) => {
+    res.status(200).send(companies);
+  });
+});
+
+//Delete Company and all her references in the users
+router.delete("/delete/:id", verifyToken, async (req, res) => {
+  if (!mongoose.isValidObjectId(req.params.id)) {
+    return res.status(400).json({
+      success: false,
+      message: "Exeption occured.\nPlease try again later",
+    });
+  }
+
+  Company.deleteOne({
+    _id: mongoose.Types.ObjectId(req.params.id),
+  })
+    .then(function () {
+      //Removing the company from all the users who have this company
+      User.updateMany(
+        {},
+        {
+          $pull: {
+            companies: mongoose.Types.ObjectId(req.params.id),
+          },
+        },
+        { multi: true }
+      ).then(() => {
+        return res
+          .status(200)
+          .json({ success: true, message: "The Company has been deleted" });
+      });
+    })
+    .catch(function (error) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Cannot find the Company" });
+    });
+});
+
+//Create New Company
+router.post("/createNewCompany", verifyToken, async (req, res) => {
+  const created_at = new Date().getTime();
+  const {
+    name,
+    company_phone,
+    company_email,
+    city,
+    address,
+    state,
+    zip,
+    website,
+  } = req.query;
+
+  try {
+    //Building the company managed by this user
+    const company = new Company({
+      name,
+      avatar:
+        "https://i2.wp.com/www.iedunote.com/img/23559/what-is-a-company-scaled.jpg?fit=2560%2C1696&quality=100&ssl=1",
+      city,
+      address,
+      state,
+      zip,
+      company_phone,
+      company_email,
+      website,
+      users: new Array(),
+      managers: new Array(),
+      created_at: created_at,
+    });
+
+    await company.save();
+
+    res
+      .status(200)
+      .send({ status: "Success", message: "Company Created Successfully" });
+  } catch (err) {
+    return res.status(422).send(err.message);
+  }
 });
 
 module.exports = router;
